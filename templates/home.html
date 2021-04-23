@@ -1,0 +1,26 @@
+{% extends "base.html" %} {% block header %}Service{% endblock %} {% block
+content %}
+<!-- <h1>login</h1> -->
+<form method="POST" action="#">
+  
+  <!-- <p><input type="text" name="nm" /></p> -->
+  
+
+
+    <div class="form-check">
+        <h1>Select service to use:</h1>
+        <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" value="ec2" checked>
+        <label class="form-check-label" for="flexRadioDefault1">
+          EC2
+        </label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2"  value="lambda">
+        <label class="form-check-label" for="flexRadioDefault2">
+          AWS Lambda
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary my-1">Submit</button>
+</form>
+{% endblock %}
