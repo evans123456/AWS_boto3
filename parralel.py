@@ -2,6 +2,7 @@ import queue
 import threading
 import time
 import http.client 
+import json
 
 # Modified from: http://www.ibm.com/developerworks/aix/library/au-threadingpython/
 # and fixed with try-except around urllib call
@@ -17,6 +18,7 @@ class ThreadUrl(threading.Thread):
         self.queue = queue    
         self.task_id = task_id    
         self.data = None # need something more sophisticated if the thread can run many times
+        self.t_d = []
     
     def run(self):    
         #while True: # uncomment this line if a thread should run as many times as it can      
@@ -24,11 +26,13 @@ class ThreadUrl(threading.Thread):
         host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"      
         try:        
             c = http.client.HTTPSConnection(host)        
-            json= '{ "key1": ' + str(count) + '}'        
+            json= '{ "key1": ' + str(count) + '}'   
+            # print(json)     
             c.request("POST", "/default/pi_estimator", json)        
             response = c.getresponse()        
             self.data = response.read().decode('utf-8')        
-            print( self.data, " from Thread", self.task_id )      
+            print( self.data, " from Thread", self.task_id ) 
+            self.t_d.append({self.task_id:self.data})     
         except IOError:        
             print( 'Failed to open ' , host ) # Is the Lambda address correct?      
             #signals to queue job is done      
@@ -44,15 +48,19 @@ def parallel_run():
         threads.append(t)    
         t.setDaemon(True)    
         t.start()  
+        
     
     #populate queue with data  
-    for x in range(0, runs):    
+    for x in range(0, runs):  
+        # print(f"X: {x}, Queue: {queue}, Count: {count}")  
         queue.put(count) 
     
     #wait on the queue until everything has been processed  
     queue.join()  
     results = [t.data for t in threads]
-    print(results)
+    thread_id = [p.t_d for p in threads]
+    print("RES: ",results)
+    print("thread_id: ",thread_id)
 
 # Not indented
 start = time.time()
