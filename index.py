@@ -1,10 +1,12 @@
-from flask import Flask, redirect,url_for, render_template, request
+from flask import Flask, redirect,url_for, render_template, request, jsonify
 import queue
 import threading
 import time
 import http.client 
 import json
-
+import math
+import statistics
+import numpy as np
 
 
 app = Flask(__name__)
@@ -14,11 +16,14 @@ count = 1000
 
 
 class ThreadUrl(threading.Thread):  
-    def __init__(self, queue, task_id):    
+    def __init__(self, queue, task_id,D,Q,S):    
         threading.Thread.__init__(self)    
         self.queue = queue    
         self.task_id = task_id    
         self.data = None # need something more sophisticated if the thread can run many times
+        self.D = D
+        self.Q = Q
+        self.S = S
     
     def run(self):    
         #while True: # uncomment this line if a thread should run as many times as it can      
@@ -26,8 +31,13 @@ class ThreadUrl(threading.Thread):
         host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"      
         try:        
             c = http.client.HTTPSConnection(host)        
-            json= '{ "key1": ' + str(count) + '}'        
-            c.request("POST", "/default/pi_estimator", json)        
+            # json= '{ "D": ' + str(D) + '}' 
+            data = {
+                "D":self.D,
+                "Q":self.Q,
+                "S":self.S,
+            }       
+            c.request("POST", "/default/pi_estimator", json.dumps(data))        
             response = c.getresponse()        
             self.data = response.read().decode('utf-8')        
             print( self.data, " from Thread", self.task_id )      
@@ -38,10 +48,12 @@ class ThreadUrl(threading.Thread):
         self.queue.task_done()
 
 
-def parallel_run(R):  
+
+
+def parallel_run(R,D,Q,S):  
     threads=[]  #spawn a pool of threads, and pass them queue instance  
     for i in range(0, R):    
-        t = ThreadUrl(queue, i)    
+        t = ThreadUrl(queue, i,D,Q,S)    
         threads.append(t)    
         t.setDaemon(True)    
         t.start()  
@@ -56,7 +68,17 @@ def parallel_run(R):
     print(results)
     return results
 
+def truncate(number, digits) -> float:
+    stepper = 10.0 ** digits
+    return math.trunc(stepper * number) / stepper
 
+
+def executeParralel(R,D,Q,S):
+    start = time.time()
+    pi_estimations = parallel_run(int(R),int(D),int(Q),int(S))
+    print( "Elapsed Time:", time.time() - start)
+    elapsed_time = time.time() - start
+    return pi_estimations,elapsed_time
 
 @app.route("/",methods = ["POST","GET"])
 def home():
@@ -82,18 +104,41 @@ def output():
 
 @app.route("/<srvce>/<R>",methods = ["POST","GET"])
 def lastPage(srvce,R):
+    max_tries = 3
     if request.method == "POST":
-        s = request.form["number_of_shots"]
-        q = request.form["reporting_rate"]
-        d = request.form["matching_digits"]
-        print(f"S : {s}, Q: {q},D : {d}")
+        S = request.form["number_of_shots"]
+        Q = request.form["reporting_rate"]
+        D = request.form["matching_digits"]
+        print(f"S : {S}, Q: {Q},D : {D}")
+
         if srvce == "lambda":
             print("LAMBDA")
-            start = time.time()
-            pi_estimations = parallel_run(int(R))
-            print( "Elapsed Time:", time.time() - start)
-            elapsed_time = time.time() - start
-            print(pi_estimations)
+
+
+            while max_tries > 0:
+
+                pi_estimations,elapsed_time = executeParralel(R,D,Q,S)
+                print("PI ESTIMATIONS",pi_estimations)
+                estimated_value_of_pi = statistics.mean(pi_estimations)
+                truncated_value_of_pi = truncate(estimated_value_of_pi, int(D)-1)
+                print ("estimated_value_of_pi: ",estimated_value_of_pi)
+                print ("truncated_value_of_pi: ",truncated_value_of_pi)
+                # cut pi to size d
+                pi_val_to_match = truncate(math.pi, int(D)-1)
+                print("pi_val_to_match: ",pi_val_to_match)
+                if float(pi_val_to_match) + 1 == float(truncated_value_of_pi):#remove + 1
+                    print("Matches!!!!")
+
+                    break
+                else:
+                    print("Dont Match!")
+                    pi_estimations2,elapsed_time2 = executeParralel(R,D,Q,S)
+
+                    # need to append the arrays to form one big one
+                    pi_estimations.extend(pi_estimations2)
+                    print(f"max_tries: {max_tries} After append: {pi_estimations}")
+                    max_tries = max_tries - 1
+
             
         
         elif srvce == "ec2":
@@ -104,7 +149,19 @@ def lastPage(srvce,R):
         
     else:
         return render_template("lastpage.html")
-    
+
+
+random_decimal = np.random.rand()
+
+@app.route("/test")
+def test():
+    return render_template("test.html", x=random_decimal)
+
+@app.route("/update_decimal", methods=["POST"])
+def update_decimal():
+    random_decimal = np.random.rand()
+    return jsonify("",render_template("test2.html", x=random_decimal))
+
 
 
 

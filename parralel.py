@@ -43,11 +43,17 @@ class ThreadUrl(threading.Thread):
 # # the class body, so not initially indented
 def parallel_run():  
     threads=[]  #spawn a pool of threads, and pass them queue instance  
-    for i in range(0, runs):    
+    for i in range(0, runs):  
+        # st = time.time()
+
+
         t = ThreadUrl(queue, i)    
         threads.append(t)    
         t.setDaemon(True)    
         t.start()  
+
+        # stp = time.time()
+        # print(f"thread: {i}, start: {st}, stop: {stp}, diff:{stp - st}")
         
     
     #populate queue with data  

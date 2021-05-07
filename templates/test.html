@@ -1,0 +1,54 @@
+{% extends "base.html" %} {% block head %}
+<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"
+></script>
+<script>
+    $(function( $ ){
+          console.log($.ajax);
+          window.setInterval(function () {
+      loadNewDecimal();
+    }, 1000);
+
+    function loadNewDecimal() {
+      $.ajax({
+        url: "/update_decimal",
+        type: "POST",
+        dataType: "json",
+        success: function (data) {
+          $(random_decimal).replaceWith(data);
+        },
+      });
+    }
+      });
+
+</script>
+<!-- 
+<script>
+  $(document).ready(function () {
+    console.log("champez", $.ajax);
+  });
+</script>
+
+<script>
+  $(function () {
+    window.setInterval(function () {
+      loadNewDecimal();
+    }, 1000);
+
+    function loadNewDecimal() {
+      $.ajax({
+        url: "/update_decimal",
+        type: "POST",
+        dataType: "json",
+        success: function (data) {
+          $(random_decimal).replace(data);
+        },
+      });
+    }
+  });
+</script> -->
+{% endblock %} {% block content %}
+<div id="random_decimal">{{x}}</div>
+{% endblock %}
