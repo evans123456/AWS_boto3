@@ -1,9 +1,60 @@
 {% extends "base.html" %} {% block head %}
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+
+
+<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"
+></script>
+
+<script type=text/javascript>
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+</script>
+
 <script
   type="text/javascript"
   src="https://www.gstatic.com/charts/loader.js"
 ></script>
+
+
+<script type=text/javascript>
+  $(function() {
+
+    $('a#calculate').bind('click', function() {
+        $.ajax({
+        dataType: "json",
+        url: $SCRIPT_ROOT + '/_add_numbers',
+        data: {
+        a: $('input[name="a"]').val(),
+        b: $('input[name="b"]').val()
+      },
+        success: function(data) {
+        $("#result").text(data.result);
+      }
+      // return false;
+      });
+
+
+
+    // $('a#calculate').bind('click', function() {
+    //   $.getJSON($SCRIPT_ROOT + '/_add_numbers', {
+    //     a: $('input[name="a"]').val(),
+    //     b: $('input[name="b"]').val()
+    //   }, function(data) {
+    //     $("#result").text(data.result);
+    //   });
+    //   return false;
+    // });
+
+
+
+  })})
+</script>
+
+
+
+
+
 <script type="text/javascript">
   google.charts.load("current", { packages: ["corechart"] });
   google.charts.setOnLoadCallback(drawChart);
@@ -43,13 +94,30 @@
 <div class="container">
   <div class="row">
     <div class="col-md-6">
-      <div id="curve_chart" style="width: auto; height: 80%"></div>
+      <div
+        id="curve_chart"
+        style="width: auto; height: auto: overflow: scroll;"
+      ></div>
       <p>
         Estimated value of π is ..... (Actual: 3.14159265359) Shots taken are
         ..... Runtime of ..... Estimated cost is .....
       </p>
       <br />
     </div>
+
+
+<h1>jQuery Example</h1>
+<p><input type=text size=5 name=a> +
+   <input type=text size=5 name=b> =
+   <span id=result>?</span>
+<p><a href=# id=calculate>calculate server side</a>
+
+
+
+
+
+
+
     <div class="col-md-6">
       <div>
         <table class="table">
@@ -61,49 +129,17 @@
               <th scope="col">Shots</th>
             </tr>
           </thead>
+
           <tbody>
+            {% for i in res %}
             <tr>
-              <th scope="row">1</th>
-              <td>Mark</td>
-              <td>Otto</td>
-              <td>@mdo</td>
+              <th scope="row">{{ loop.index }}</th>
+              <td>{{i["thread_id"]}}</td>
+              <td>{{i["incircle"]}}</td>
+              <td>{{i["shots"]}}</td>
             </tr>
-            <tr>
-              <th scope="row">2</th>
-              <td>Jacob</td>
-              <td>Thornton</td>
-              <td>@fat</td>
-            </tr>
-            <tr>
-              <th scope="row">3</th>
-              <td>Larry</td>
-              <td>the Bird</td>
-              <td>@twitter</td>
-            </tr>
-            <tr>
-              <th scope="row">4</th>
-              <td>Larry</td>
-              <td>the Bird</td>
-              <td>@twitter</td>
-            </tr>
-            <tr>
-              <th scope="row">5</th>
-              <td>Larry</td>
-              <td>the Bird</td>
-              <td>@twitter</td>
-            </tr>
-            <tr>
-              <th scope="row">6</th>
-              <td>Larry</td>
-              <td>the Bird</td>
-              <td>@twitter</td>
-            </tr>
-            <tr>
-              <th scope="row">7</th>
-              <td>Larry</td>
-              <td>the Bird</td>
-              <td>@twitter</td>
-            </tr>
+
+            {% endfor %}
           </tbody>
         </table>
       </div>
