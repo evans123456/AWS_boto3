@@ -1,12 +1,6 @@
 {% extends "base.html" %} {% block head %}
 
 
-<script
-  src="https://code.jquery.com/jquery-3.4.1.min.js"
-  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-  crossorigin="anonymous"
-></script>
-
 <script type=text/javascript>
   $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
 </script>
@@ -16,40 +10,9 @@
   src="https://www.gstatic.com/charts/loader.js"
 ></script>
 
-
-<script type=text/javascript>
-  $(function() {
-
-    $('a#calculate').bind('click', function() {
-        $.ajax({
-        dataType: "json",
-        url: $SCRIPT_ROOT + '/_add_numbers',
-        data: {
-        a: $('input[name="a"]').val(),
-        b: $('input[name="b"]').val()
-      },
-        success: function(data) {
-        $("#result").text(data.result);
-      }
-      // return false;
-      });
+</script> 
 
 
-
-    // $('a#calculate').bind('click', function() {
-    //   $.getJSON($SCRIPT_ROOT + '/_add_numbers', {
-    //     a: $('input[name="a"]').val(),
-    //     b: $('input[name="b"]').val()
-    //   }, function(data) {
-    //     $("#result").text(data.result);
-    //   });
-    //   return false;
-    // });
-
-
-
-  })})
-</script>
 
 
 
@@ -59,22 +22,30 @@
   google.charts.load("current", { packages: ["corechart"] });
   google.charts.setOnLoadCallback(drawChart);
 
+  var data = {{ res|tojson }}
+  var vals = []
+  console.log("What we want: ",data)
+  for (i = 0; i < data.length; i++) {
+    // console.log("--" , data[i]["estimated_values"])
+    // console.log("--" , JSON.parse(data[i]["estimated_values"]))
+    // console.log(typeof data[i]["estimated_values"])
+  }
+
+  pi_estimations = data[0]["estimated_values"]
+  console.log(pi_estimations)
+  plot = [["run", "pi estimate", "pi"],]
+
+  for (i = 0; i < pi_estimations.length; i++) {
+    plot.push([i,pi_estimations[i],3.14159265359])
+    
+  }
+
+  console.log(plot)
+
+
+
   function drawChart() {
-    var data = google.visualization.arrayToDataTable([
-      ["run", "pi estimate", "pi"],
-      ["1", 3.14, 3.14159265359],
-      ["2", 3.12, 3.14159265359],
-      ["3", 3.16, 3.14159265359],
-      ["4", 3.11, 3.14159265359],
-      ["5", 3.14, 3.14159265359],
-      ["6", 3.12, 3.14159265359],
-      ["7", 3.15, 3.14159265359],
-      ["8", 3.13, 3.14159265359],
-      ["9", 3.14, 3.14159265359],
-      ["10", 3.12, 3.14159265359],
-      ["11", 3.17, 3.14159265359],
-      ["12", 3.16, 3.14159265359],
-    ]);
+    var data = google.visualization.arrayToDataTable(plot);
 
     var options = {
       title: "estimated value vs actual value of pi",
@@ -106,14 +77,15 @@
     </div>
 
 
-<h1>jQuery Example</h1>
+<!-- <h1>jQuery Example</h1>
 <p><input type=text size=5 name=a> +
    <input type=text size=5 name=b> =
    <span id=result>?</span>
-<p><a href=# id=calculate>calculate server side</a>
+<p><a href=# id=calculate>calculate server side</a> -->
 
 
-
+  <button id="btn" class="btn"> stop </button>
+  
 
 
 
@@ -130,8 +102,8 @@
             </tr>
           </thead>
 
-          <tbody>
-            {% for i in res %}
+          <tbody id="tablebody" >
+            <!-- {% for i in res %}
             <tr>
               <th scope="row">{{ loop.index }}</th>
               <td>{{i["thread_id"]}}</td>
@@ -139,12 +111,90 @@
               <td>{{i["shots"]}}</td>
             </tr>
 
-            {% endfor %}
+            {% endfor %} -->
           </tbody>
         </table>
       </div>
     </div>
   </div>
 </div>
+
+<script
+src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- <script type="text/javascript">
+    $('button#btn').click(function(){
+      $.ajax({
+          url: "/_get_data/",
+          type: "POST",
+          success: function(resp){
+              $('div#response').append(resp.data);
+          }
+      });
+    });
+</script> -->
+
+
+<script>
+  function setIntervalX(callback, delay, repetitions) {
+    var x = 0;
+    var intervalID = window.setInterval(function () {
+
+       callback();
+
+       if (++x === repetitions) {
+           window.clearInterval(intervalID);
+       }
+    }, delay);
+}
+
+  $(document).ready(function() {
+      // alert("document ready occurred!");
+      var x = 0
+  //     let intervalId = window.setInterval(function () {
+        
+          
+        
+  // }, 1000);
+  setIntervalX(function () {
+          $.ajax({
+            url: "/_get_data",
+            type: "POST",
+            dataType: "json",
+            success: function (data) {
+              console.log("The other data: ",data["data"])
+              data["data"].forEach(function(item,index) {
+                console.log("item: ",item)
+                $('tbody#tablebody').append("<tr><th scope='row'>"+ index+"</th><td>"+ item["thread_id"] +"</td><td>"+ item["incircle"] +"</td><td> "+ item["shots"] +"</td></tr>");
+              });
+            },
+        });
+          }, 1000, 1);
+
+  $('button#btn').click(function(){
+  window.clearInterval(intervalId);
+    });
+});
+
+
+
+
+  // $(function(){
+  //       console.log($.ajax);
+  //       window.setInterval(function () {
+  //         $.ajax({
+  //           url: "/_get_data",
+  //           type: "POST",
+  //           dataType: "json",
+  //           success: function (data) {
+  //             $('div#response').append(data);
+  //           },
+  //       });
+  // }, 1000);
+
+  
+    // });
+
+</script>
 
 {% endblock %}

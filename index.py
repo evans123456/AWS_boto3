@@ -8,9 +8,11 @@ import math
 import statistics
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+from flask_socketio import SocketIO
 
 
 app = Flask(__name__)
+# socketio = SocketIO(app)
 
 queue = queue.Queue() # queue is synchronized, so caters for multiple threads
 count = 1000
@@ -107,7 +109,7 @@ def getpage(id,D,Q,S):
 
         data = json.loads(response.read().decode('utf-8') ) 
         data.update({'thread_id': id,})   
-        print("here:  ",data)
+        # print("here:  ",data)
         return data
 
     except IOError:        
@@ -122,7 +124,7 @@ def getpages(R,D,Q,S):
     
         for i in runs:
             data=getpage(i,int(D),int(Q),int(S))
-            print("getpage_data",data)
+            # print("getpage_data",data)
             results.append(data)
 
             # ajax here
@@ -147,7 +149,13 @@ def reset():
 
 
 
+@app.route('/_get_data', methods=['POST'])
+def _get_data():
+    global results
+    # len(results)    
+    print(results)
 
+    return jsonify({'data':results})
 
 
 
@@ -209,15 +217,76 @@ def update_decimal():
 @app.route("/output/<service>/<R>/<D>/<Q>/<S>")
 def output(service,R,D,Q,S):
     global max_tries,results
+    pi_values=[]
 
     if service == "lambda":
         print("LAMBDA")
 
         # while max_tries >= 0:
 
-        results = getpages(R,D,Q,S) 
+        # subbing from here
 
-        print("OUTPUT: ",results)
+        # results = getpages(R,D,Q,S) 
+
+        
+
+        # -----------------------------------------------------------------------------------------------------------
+        with ThreadPoolExecutor() as executor:        
+        # results = executor.map(getpage, runs)  
+            runs=[value for value in range(int(R))]
+    
+        for i in runs:
+            # data=getpage(i,int(D),int(Q),int(S))  
+            # print("getpage_data",data)
+            # results.append(data)
+        
+            try:        
+                host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
+                c = http.client.HTTPSConnection(host)        
+                data = {
+                    'thread_id': i,
+                        "D":D,
+                        "Q":Q,
+                        "S":S
+                    }  
+                c.request("POST", "/default/pi_estimator", json.dumps(data))        
+                response = c.getresponse()        
+                # data = response.read().decode('utf-8')        
+                # print( data, " from Thread", id )  
+
+                data = json.loads(response.read().decode('utf-8') ) 
+                # data.update({'thread_id': i,})   
+                print("here:  ",data)
+
+                # pi_values.append(data["body"])
+
+
+                #ajax here
+
+
+
+
+
+                results.append(data)
+
+            except IOError:        
+                print( 'Failed to open ', host ) # Is the Lambda address correct?    
+                print(data+" from "+str(i)) # May expose threads as completing in a different order    
+                return "page "+str(i)
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # -----------------------------------------------------------------------------------------------------------
 
 
 
@@ -225,7 +294,7 @@ def output(service,R,D,Q,S):
             # pi_estimations,elapsed_time = executeParralel(R,D,Q,S) #ignore elapsed time
             # print("PI ESTIMATIONS",pi_estimations)
 
-            # estimated_value_of_pi = statistics.mean(pi_estimations)
+            # estimated_value_of_pi = statistics.mean(pi_values)
             # truncated_value_of_pi = truncate(estimated_value_of_pi, int(D)-1)
             # print ("estimated_value_of_pi: ",estimated_value_of_pi)
             # print ("truncated_value_of_pi: ",truncated_value_of_pi)
@@ -256,6 +325,7 @@ def output(service,R,D,Q,S):
     elif service == "ec2":
         print("EC2")
 
+    # print("OUTPUT: ",results)
     return render_template("output.html",res=results)
 
 
@@ -271,7 +341,7 @@ def lastPage(srvce,R):
         D = request.form["matching_digits"]
         print(f"S : {S}, Q: {Q},D : {D}")
         
-        return redirect(url_for("output",service=srvce,R=R,D=D,Q=Q,S=S))
+        return redirect(url_for("output",service=srvce,R=int(R),D=int(D),Q=int(Q),S=int(S)))
 
     else:
         return render_template("lastpage.html")
@@ -305,6 +375,7 @@ def resources(srv):
 
 if __name__ == "__main__":
     app.run(debug=True)
+    # socketio.run(app)
     # app.run(host='0.0.0.0', port=80,debug=True)
 
 
