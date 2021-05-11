@@ -18,7 +18,7 @@ app = Flask(__name__)
 queue = queue.Queue() # queue is synchronized, so caters for multiple threads
 # count = 1000
 # important = []
-max_tries = 3
+max_tries = 2
 results=[]
 
 # class ThreadUrl(threading.Thread):  
@@ -255,7 +255,7 @@ def output(service,R,D,Q,S):
                     c.request("POST", "/default/pi_estimator", json.dumps(data))        
                     response = c.getresponse()        
                     # data = response.read().decode('utf-8')        
-                    # print( data, " from Thread", id )  
+                    # print( data, " from Thread", id )     
 
                     data = json.loads(response.read().decode('utf-8') ) 
                     # data.update({'thread_id': i,})   
@@ -294,7 +294,7 @@ def output(service,R,D,Q,S):
             pi_val_to_match = truncate(math.pi, int(D)-1)
             print("pi_val_to_match: ",pi_val_to_match)
 
-            if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
+            if float(pi_val_to_match)+1 == float(truncated_pi_estimate):#remove + 1
                 print("Matches!!!!")
                 break
 
