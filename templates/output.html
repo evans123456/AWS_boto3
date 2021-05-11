@@ -157,15 +157,19 @@ src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         
   // }, 1000);
   setIntervalX(function () {
+    var index = 1
           $.ajax({
             url: "/_get_data",
             type: "POST",
             dataType: "json",
             success: function (data) {
               console.log("The other data: ",data["data"])
-              data["data"].forEach(function(item,index) {
+              data["data"].forEach(function(item2,idx) {
+                JSON.parse(item2["values"]).forEach(function(item) {
                 console.log("item: ",item)
-                $('tbody#tablebody').append("<tr><th scope='row'>"+ index+"</th><td>"+ item["thread_id"] +"</td><td>"+ item["incircle"] +"</td><td> "+ item["shots"] +"</td></tr>");
+                $('tbody#tablebody').append("<tr><th scope='row'>"+ index+"</th><td>"+ idx +"</td><td>"+ item[0] +"</td><td> "+ item[1] +"</td></tr>");
+                  index += 1
+              });
               });
             },
         });

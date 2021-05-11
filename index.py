@@ -153,7 +153,7 @@ def reset():
 def _get_data():
     global results
     # len(results)    
-    print(results)
+    # print(results)
 
     return jsonify({'data':results})
 
@@ -216,7 +216,11 @@ def update_decimal():
 
 @app.route("/output/<service>/<R>/<D>/<Q>/<S>")
 def output(service,R,D,Q,S):
+    eR = int(S)/int(R)
+    print("Each resource: ",eR)
+    
     global max_tries,results
+    results = []
     pi_values=[]
 
     if service == "lambda":
@@ -239,15 +243,16 @@ def output(service,R,D,Q,S):
             # data=getpage(i,int(D),int(Q),int(S))  
             # print("getpage_data",data)
             # results.append(data)
+
         
-            try:        
+            try:  #each R      
                 host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
                 c = http.client.HTTPSConnection(host)        
                 data = {
                     'thread_id': i,
                         "D":D,
                         "Q":Q,
-                        "S":S
+                        "S":eR
                     }  
                 c.request("POST", "/default/pi_estimator", json.dumps(data))        
                 response = c.getresponse()        
@@ -257,9 +262,6 @@ def output(service,R,D,Q,S):
                 data = json.loads(response.read().decode('utf-8') ) 
                 # data.update({'thread_id': i,})   
                 print("here:  ",data)
-
-                # pi_values.append(data["body"])
-
 
                 #ajax here
 
@@ -333,7 +335,7 @@ def output(service,R,D,Q,S):
 # curl -d '{"key1":"yezur"}' https://11zwbpoixg.execute-api.us-east-1.amazonaws.com/default/pi_estimator 
 
 @app.route("/<srvce>/<R>",methods = ["POST","GET"])
-def lastPage(srvce,R):
+def lastPage(srvce, R):
     
     if request.method == "POST":
         S = request.form["number_of_shots"]
