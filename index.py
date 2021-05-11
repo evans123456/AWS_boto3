@@ -8,6 +8,7 @@ import math
 import statistics
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+import ast
 from flask_socketio import SocketIO
 
 
@@ -15,123 +16,123 @@ app = Flask(__name__)
 # socketio = SocketIO(app)
 
 queue = queue.Queue() # queue is synchronized, so caters for multiple threads
-count = 1000
-important = []
+# count = 1000
+# important = []
 max_tries = 3
 results=[]
 
-class ThreadUrl(threading.Thread):  
-    def __init__(self, queue, task_id,D,Q,S):    
-        threading.Thread.__init__(self)    
-        self.queue = queue    
-        self.task_id = task_id    
-        self.data = None # need something more sophisticated if the thread can run many times
-        self.D = D
-        self.Q = Q
-        self.S = S
+# class ThreadUrl(threading.Thread):  
+#     def __init__(self, queue, task_id,D,Q,S):    
+#         threading.Thread.__init__(self)    
+#         self.queue = queue    
+#         self.task_id = task_id    
+#         self.data = None # need something more sophisticated if the thread can run many times
+#         self.D = D
+#         self.Q = Q
+#         self.S = S
     
-    def run(self):    
-        #while True: # uncomment this line if a thread should run as many times as it can      
-        count = self.queue.get()      
-        host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"      
-        try:        
-            c = http.client.HTTPSConnection(host)        
-            # json= '{ "D": ' + str(D) + '}' 
-            data = {
-                "D":self.D,
-                "Q":self.Q,
-                "S":self.S,
-            }       
-            c.request("POST", "/default/pi_estimator", json.dumps(data))        
-            response = c.getresponse()        
-            self.data = json.loads(response.read().decode('utf-8') ) 
-            self.data.update({'thread_id': self.task_id,})   
-            important.append(self.data)
-            print("yees", self.data)     
-        except IOError:        
-            print( 'Failed to open ' , host ) # Is the Lambda address correct?      
-            #signals to queue job is done      
-            self.queue.task_done()
-        self.queue.task_done()
+#     def run(self):    
+#         #while True: # uncomment this line if a thread should run as many times as it can      
+#         count = self.queue.get()      
+#         host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"      
+#         try:        
+#             c = http.client.HTTPSConnection(host)        
+#             # json= '{ "D": ' + str(D) + '}' 
+#             data = {
+#                 "D":self.D,
+#                 "Q":self.Q,
+#                 "S":self.S,
+#             }       
+#             c.request("POST", "/default/pi_estimator", json.dumps(data))        
+#             response = c.getresponse()        
+#             self.data = json.loads(response.read().decode('utf-8') ) 
+#             self.data.update({'thread_id': self.task_id,})   
+#             important.append(self.data)
+#             print("yees", self.data)     
+#         except IOError:        
+#             print( 'Failed to open ' , host ) # Is the Lambda address correct?      
+#             #signals to queue job is done      
+#             self.queue.task_done()
+#         self.queue.task_done()
     
 
-def parallel_run(R,D,Q,S):  
-    threads=[]  #spawn a pool of threads, and pass them queue instance  
-    for i in range(0, R):    
-        t = ThreadUrl(queue, i,D,Q,S)    
-        threads.append(t)    
-        t.setDaemon(True)    
-        t.start()  
+# def parallel_run(R,D,Q,S):  
+#     threads=[]  #spawn a pool of threads, and pass them queue instance  
+#     for i in range(0, R):    
+#         t = ThreadUrl(queue, i,D,Q,S)    
+#         threads.append(t)    
+#         t.setDaemon(True)    
+#         t.start()  
     
-    #populate queue with data  
-    for x in range(0, R):    
-        queue.put(count) 
+#     #populate queue with data  
+#     for x in range(0, R):    
+#         queue.put(count) 
     
-    #wait on the queue until everything has been processed  
-    queue.join() 
-    # print("API res: ",json.loads(t.data))
+#     #wait on the queue until everything has been processed  
+#     queue.join() 
+#     # print("API res: ",json.loads(t.data))
 
-    # [float(json.loads(th.data) )for th in threads]
+#     # [float(json.loads(th.data) )for th in threads]
 
-    results = [float(json.loads(t.data["body"] ))for t in threads]
-    print("The results: ",results)
-    return results
-
-
+#     results = [float(json.loads(t.data["body"] ))for t in threads]
+#     print("The results: ",results)
+#     return results
 
 
-def executeParralel(R,D,Q,S):
-    start = time.time()
-    pi_estimations = parallel_run(int(R),int(D),int(Q),int(S))
-    elapsed_time = time.time() - start
-    print( "Elapsed Time:", elapsed_time)
-    return pi_estimations,elapsed_time
 
 
+# def executeParralel(R,D,Q,S):
+#     start = time.time()
+#     pi_estimations = parallel_run(int(R),int(D),int(Q),int(S))
+#     elapsed_time = time.time() - start
+#     print( "Elapsed Time:", elapsed_time)
+#     return pi_estimations,elapsed_time
 
 
 
 
 
-def getpage(id,D,Q,S):    
-    try:        
-        host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
-        c = http.client.HTTPSConnection(host)        
-        data = {
-                "D":D,
-                "Q":Q,
-                "S":S
-            }       
-        c.request("POST", "/default/pi_estimator", json.dumps(data))        
-        response = c.getresponse()        
-        # data = response.read().decode('utf-8')        
-        # print( data, " from Thread", id )  
 
-        data = json.loads(response.read().decode('utf-8') ) 
-        data.update({'thread_id': id,})   
-        # print("here:  ",data)
-        return data
 
-    except IOError:        
-        print( 'Failed to open ', host ) # Is the Lambda address correct?    
-        print(data+" from "+str(id)) # May expose threads as completing in a different order    
-        return "page "+str(id)
+# def getpage(id,D,Q,S):    
+#     try:        
+#         host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
+#         c = http.client.HTTPSConnection(host)        
+#         data = {
+#                 "D":D,
+#                 "Q":Q,
+#                 "S":S
+#             }       
+#         c.request("POST", "/default/pi_estimator", json.dumps(data))        
+#         response = c.getresponse()        
+#         # data = response.read().decode('utf-8')        
+#         # print( data, " from Thread", id )  
 
-def getpages(R,D,Q,S):    
-    with ThreadPoolExecutor() as executor:        
-        # results = executor.map(getpage, runs)  
-        runs=[value for value in range(int(R))]
+#         data = json.loads(response.read().decode('utf-8') ) 
+#         data.update({'thread_id': id,})   
+#         # print("here:  ",data)
+#         return data
+
+#     except IOError:        
+#         print( 'Failed to open ', host ) # Is the Lambda address correct?    
+#         print(data+" from "+str(id)) # May expose threads as completing in a different order    
+#         return "page "+str(id)
+
+# def getpages(R,D,Q,S):    
+#     with ThreadPoolExecutor() as executor:        
+#         # results = executor.map(getpage, runs)  
+#         runs=[value for value in range(int(R))]
     
-        for i in runs:
-            data=getpage(i,int(D),int(Q),int(S))
-            # print("getpage_data",data)
-            results.append(data)
+#         for i in runs:
+#             data=getpage(i,int(D),int(Q),int(S))
+#             # print("getpage_data",data)
+#             results.append(data)
 
-            # ajax here
+#             # ajax here
 
 
-        # print("inside the while: ",results)  
-    return results
+#         # print("inside the while: ",results)  
+#     return results
 
 
 
@@ -152,8 +153,6 @@ def reset():
 @app.route('/_get_data', methods=['POST'])
 def _get_data():
     global results
-    # len(results)    
-    # print(results)
 
     return jsonify({'data':results})
 
@@ -193,11 +192,7 @@ def home():
     else:
         return render_template("home.html")
 
-@app.route('/_add_numbers')
-def add_numbers():
-    a = request.args.get('a', 0, type=int)
-    b = request.args.get('b', 0, type=int)
-    return jsonify(result=a + b)
+
 
 
 random_decimal = np.random.rand()
@@ -217,7 +212,9 @@ def update_decimal():
 @app.route("/output/<service>/<R>/<D>/<Q>/<S>")
 def output(service,R,D,Q,S):
     eR = int(S)/int(R)
-    print("Each resource: ",eR)
+    incircle=0
+    shot = 0
+    # print("Each resource: ",eR)
     
     global max_tries,results
     results = []
@@ -235,92 +232,79 @@ def output(service,R,D,Q,S):
         
 
         # -----------------------------------------------------------------------------------------------------------
-        with ThreadPoolExecutor() as executor:        
-        # results = executor.map(getpage, runs)  
-            runs=[value for value in range(int(R))]
-    
-        for i in runs:
-            # data=getpage(i,int(D),int(Q),int(S))  
-            # print("getpage_data",data)
-            # results.append(data)
-
+        while max_tries > 0:
+            with ThreadPoolExecutor() as executor:        
+            # results = executor.map(getpage, runs)  
+                runs=[value for value in range(int(R))]
         
-            try:  #each R      
-                host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
-                c = http.client.HTTPSConnection(host)        
-                data = {
-                    'thread_id': i,
-                        "D":D,
-                        "Q":Q,
-                        "S":eR
-                    }  
-                c.request("POST", "/default/pi_estimator", json.dumps(data))        
-                response = c.getresponse()        
-                # data = response.read().decode('utf-8')        
-                # print( data, " from Thread", id )  
+            for i in runs:
+                # data=getpage(i,int(D),int(Q),int(S))  
+                # print("getpage_data",data)
+                # results.append(data)
 
-                data = json.loads(response.read().decode('utf-8') ) 
-                # data.update({'thread_id': i,})   
-                print("here:  ",data)
+            
+                try:  #each R      
+                    host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
+                    c = http.client.HTTPSConnection(host)        
+                    data = {
+                        'thread_id': i,
+                            "D":D,
+                            "Q":Q,
+                            "S":eR
+                        }  
+                    c.request("POST", "/default/pi_estimator", json.dumps(data))        
+                    response = c.getresponse()        
+                    # data = response.read().decode('utf-8')        
+                    # print( data, " from Thread", id )  
 
-                #ajax here
+                    data = json.loads(response.read().decode('utf-8') ) 
+                    # data.update({'thread_id': i,})   
+                    print("here:  ",data)
 
-
-
-
-
-                results.append(data)
-
-            except IOError:        
-                print( 'Failed to open ', host ) # Is the Lambda address correct?    
-                print(data+" from "+str(i)) # May expose threads as completing in a different order    
-                return "page "+str(i)
+                    #ajax here
 
 
 
 
 
+                    results.append(data)
+
+                except IOError:        
+                    print( 'Failed to open ', host ) # Is the Lambda address correct?    
+                    print(data+" from "+str(i)) # May expose threads as completing in a different order    
+                    return "page "+str(i)
 
 
+            for i in results:
+                for j in ast.literal_eval(i['values']):
+                    incircle = j[0] + incircle
+                    shot = j[1] + shot
+
+                    print("results: ",j)
+            
+            print(f"Total Incircle: {incircle}, Shots: {shot}")
+
+            pi_estimate = (incircle/shot)*4
+            print("PI Estimate: ",pi_estimate)
+
+            truncated_pi_estimate = truncate(pi_estimate, int(D)-1)
+            print ("truncated_pi_estimate: ",truncated_pi_estimate)
+
+            # cut pi to size d
+            pi_val_to_match = truncate(math.pi, int(D)-1)
+            print("pi_val_to_match: ",pi_val_to_match)
+
+            if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
+                print("Matches!!!!")
+                break
 
 
+                # break
+            else:
+                print("Dont Match!")
+                max_tries = max_tries -1
 
 
-
-
-        # -----------------------------------------------------------------------------------------------------------
-
-
-
-
-            # pi_estimations,elapsed_time = executeParralel(R,D,Q,S) #ignore elapsed time
-            # print("PI ESTIMATIONS",pi_estimations)
-
-            # estimated_value_of_pi = statistics.mean(pi_values)
-            # truncated_value_of_pi = truncate(estimated_value_of_pi, int(D)-1)
-            # print ("estimated_value_of_pi: ",estimated_value_of_pi)
-            # print ("truncated_value_of_pi: ",truncated_value_of_pi)
-
-            # # cut pi to size d
-            # pi_val_to_match = truncate(math.pi, int(D)-1)
-            # print("pi_val_to_match: ",pi_val_to_match)
-
-            # if float(pi_val_to_match) == float(truncated_value_of_pi):#remove + 1
-            #     print("Matches!!!!")
-
-
-            #     break
-            # else:
-            #     print("Dont Match!")
-            #     new_pi_estimations,new_elapsed_time = executeParralel(R,D,Q,S)
-
-            #     # need to append the arrays to form one big one
-            #     pi_estimations = pi_estimations + new_pi_estimations
-            #     print("All Estimations: ",pi_estimations)
-            #     print(f"max_tries: {max_tries} After append: {pi_estimations}")
-            # max_tries = max_tries - 1
-    
-        # return render_template("output.html",res=results) 
 
             
         
@@ -328,7 +312,7 @@ def output(service,R,D,Q,S):
         print("EC2")
 
     # print("OUTPUT: ",results)
-    return render_template("output.html",res=results)
+    return render_template("output.html",res=results,incircle=incircle,shot=shot,pi_estimate=pi_estimate)
 
 
 # https://11zwbpoixg.execute-api.us-east-1.amazonaws.com/default/pi_estimator -> request url
