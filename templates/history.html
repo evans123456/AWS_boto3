@@ -4,6 +4,7 @@ content %}
 <table class="table">
   <thead>
     <tr>
+      <th scope="col">#</th>
       <th scope="col">S</th>
       <th scope="col">Q</th>
       <th scope="col">R</th>
@@ -13,62 +14,17 @@ content %}
     </tr>
   </thead>
   <tbody>
+    {% for i in vals %}
     <tr>
       <th scope="row">1</th>
-      <td>Mark</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-      <td>Otto</td>
-      <td>@mdo</td>
+      <td>{{ i["s"] }}</td>
+      <td>{{ i["q"] }}</td>
+      <td>{{ i["r"] }}</td>
+      <td>{{ i["d"] }}</td>
+      <td>{{ i["pi_estimate"] }}</td>
+      <td>{{ i["cost"] }}</td>
     </tr>
-    <tr>
-      <th scope="row">2</th>
-      <td>Jacob</td>
-      <td>Thornton</td>
-      <td>@fat</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">3</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">4</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">5</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">6</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
-    <tr>
-      <th scope="row">7</th>
-      <td>Larry</td>
-      <td>the Bird</td>
-      <td>@twitter</td>
-      <td>Otto</td>
-      <td>@mdo</td>
-    </tr>
+    {% endfor %}
   </tbody>
 </table>
 

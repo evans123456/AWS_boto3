@@ -1,3 +1,6 @@
+#  gcloud app logs tail -s default -> see logs
+# gcloud app deploy
+
 from flask import Flask, redirect,url_for, render_template, request, jsonify
 import queue
 import threading
@@ -10,10 +13,19 @@ from random import random
 from concurrent.futures import ThreadPoolExecutor
 import ast
 from flask_socketio import SocketIO
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+
+    
 
 
 app = Flask(__name__)
 # socketio = SocketIO(app)
+cred = credentials.Certificate("serviceAcc.json")
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
 
 queue = queue.Queue() # queue is synchronized, so caters for multiple threads
 # count = 1000
@@ -21,127 +33,12 @@ queue = queue.Queue() # queue is synchronized, so caters for multiple threads
 max_tries = 2
 results=[]
 
-# class ThreadUrl(threading.Thread):  
-#     def __init__(self, queue, task_id,D,Q,S):    
-#         threading.Thread.__init__(self)    
-#         self.queue = queue    
-#         self.task_id = task_id    
-#         self.data = None # need something more sophisticated if the thread can run many times
-#         self.D = D
-#         self.Q = Q
-#         self.S = S
-    
-#     def run(self):    
-#         #while True: # uncomment this line if a thread should run as many times as it can      
-#         count = self.queue.get()      
-#         host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"      
-#         try:        
-#             c = http.client.HTTPSConnection(host)        
-#             # json= '{ "D": ' + str(D) + '}' 
-#             data = {
-#                 "D":self.D,
-#                 "Q":self.Q,
-#                 "S":self.S,
-#             }       
-#             c.request("POST", "/default/pi_estimator", json.dumps(data))        
-#             response = c.getresponse()        
-#             self.data = json.loads(response.read().decode('utf-8') ) 
-#             self.data.update({'thread_id': self.task_id,})   
-#             important.append(self.data)
-#             print("yees", self.data)     
-#         except IOError:        
-#             print( 'Failed to open ' , host ) # Is the Lambda address correct?      
-#             #signals to queue job is done      
-#             self.queue.task_done()
-#         self.queue.task_done()
-    
-
-# def parallel_run(R,D,Q,S):  
-#     threads=[]  #spawn a pool of threads, and pass them queue instance  
-#     for i in range(0, R):    
-#         t = ThreadUrl(queue, i,D,Q,S)    
-#         threads.append(t)    
-#         t.setDaemon(True)    
-#         t.start()  
-    
-#     #populate queue with data  
-#     for x in range(0, R):    
-#         queue.put(count) 
-    
-#     #wait on the queue until everything has been processed  
-#     queue.join() 
-#     # print("API res: ",json.loads(t.data))
-
-#     # [float(json.loads(th.data) )for th in threads]
-
-#     results = [float(json.loads(t.data["body"] ))for t in threads]
-#     print("The results: ",results)
-#     return results
-
-
-
-
-# def executeParralel(R,D,Q,S):
-#     start = time.time()
-#     pi_estimations = parallel_run(int(R),int(D),int(Q),int(S))
-#     elapsed_time = time.time() - start
-#     print( "Elapsed Time:", elapsed_time)
-#     return pi_estimations,elapsed_time
-
-
-
-
-
-
-
-# def getpage(id,D,Q,S):    
-#     try:        
-#         host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
-#         c = http.client.HTTPSConnection(host)        
-#         data = {
-#                 "D":D,
-#                 "Q":Q,
-#                 "S":S
-#             }       
-#         c.request("POST", "/default/pi_estimator", json.dumps(data))        
-#         response = c.getresponse()        
-#         # data = response.read().decode('utf-8')        
-#         # print( data, " from Thread", id )  
-
-#         data = json.loads(response.read().decode('utf-8') ) 
-#         data.update({'thread_id': id,})   
-#         # print("here:  ",data)
-#         return data
-
-#     except IOError:        
-#         print( 'Failed to open ', host ) # Is the Lambda address correct?    
-#         print(data+" from "+str(id)) # May expose threads as completing in a different order    
-#         return "page "+str(id)
-
-# def getpages(R,D,Q,S):    
-#     with ThreadPoolExecutor() as executor:        
-#         # results = executor.map(getpage, runs)  
-#         runs=[value for value in range(int(R))]
-    
-#         for i in runs:
-#             data=getpage(i,int(D),int(Q),int(S))
-#             # print("getpage_data",data)
-#             results.append(data)
-
-#             # ajax here
-
-
-#         # print("inside the while: ",results)  
-#     return results
-
-
-
-
 
 
 @app.route("/reset")
 def reset():
     results = []
+    jsonify({'data':results})
     
 
 
@@ -238,12 +135,9 @@ def output(service,R,D,Q,S):
             # results = executor.map(getpage, runs)  
                 runs=[value for value in range(int(R))]
         
-            for i in runs:
-                # data=getpage(i,int(D),int(Q),int(S))  
-                # print("getpage_data",data)
-                # results.append(data)
 
-            
+            for i in runs:
+           
                 try:  #each R      
                     host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
                     c = http.client.HTTPSConnection(host)        
@@ -253,6 +147,7 @@ def output(service,R,D,Q,S):
                             "Q":Q,
                             "S":eR
                         }  
+                    # start = time.time()
                     c.request("POST", "/default/pi_estimator", json.dumps(data))        
                     response = c.getresponse()        
                     # data = response.read().decode('utf-8')        
@@ -277,6 +172,7 @@ def output(service,R,D,Q,S):
 
             for i in results:
                 print("I ->: ",i)
+                # elapsed_time.append(i['elapsed_time'])
                 
                 for j in ast.literal_eval(i['values']):
                     incircle = j[0] + incircle
@@ -300,6 +196,14 @@ def output(service,R,D,Q,S):
 
             if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
                 print("Matches!!!!")
+                db.collection("runs").add(
+                    {"cost":0.001150369644165039,
+                    "d":D,
+                    "pi_estimate":pi_estimate,
+                    "q":Q,
+                    "r":R,
+                    "s":S}
+                )
                 break
 
 
@@ -344,7 +248,14 @@ def lastPage(srvce, R):
 
 @app.route("/history")
 def history():
-    return render_template("history.html")
+    values = []
+    docs = db.collection("runs").get()
+    for doc in docs:
+        print(doc.to_dict())
+        values.append(doc.to_dict())
+
+
+    return render_template("history.html",vals=values)
 
 
 @app.route("/<srv>",methods = ["POST","GET"])
@@ -364,6 +275,7 @@ def resources(srv):
 
 
 if __name__ == "__main__":
+    
     app.run(debug=True)
     # socketio.run(app)
     # app.run(host='0.0.0.0', port=80,debug=True)
