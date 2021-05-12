@@ -6,7 +6,7 @@ import http.client
 import json
 import math
 import statistics
-import numpy as np
+from random import random
 from concurrent.futures import ThreadPoolExecutor
 import ast
 from flask_socketio import SocketIO
@@ -195,7 +195,7 @@ def home():
 
 
 
-random_decimal = np.random.rand()
+random_decimal = random()
 
 @app.route("/test")
 def test():
@@ -203,7 +203,7 @@ def test():
 
 @app.route("/update_decimal", methods=["POST"])
 def update_decimal():
-    random_decimal = np.random.rand()
+    random_decimal = random()
     return jsonify("",render_template("test2.html", x=random_decimal))
 
 
