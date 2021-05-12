@@ -214,6 +214,7 @@ def output(service,R,D,Q,S):
     eR = int(S)/int(R)
     incircle=0
     shot = 0
+    pi_estimations = []
     # print("Each resource: ",eR)
     
     global max_tries,results
@@ -260,14 +261,13 @@ def output(service,R,D,Q,S):
                     data = json.loads(response.read().decode('utf-8') ) 
                     # data.update({'thread_id': i,})   
                     print("here:  ",data)
+                    if "errorMessage" in data:
+                        print("Error from AWS")
+                    else:
+                        results.append(data)
 
                     #ajax here
-
-
-
-
-
-                    results.append(data)
+                    
 
                 except IOError:        
                     print( 'Failed to open ', host ) # Is the Lambda address correct?    
@@ -276,9 +276,13 @@ def output(service,R,D,Q,S):
 
 
             for i in results:
+                print("I ->: ",i)
+                
                 for j in ast.literal_eval(i['values']):
                     incircle = j[0] + incircle
                     shot = j[1] + shot
+                    pie = (j[0]/j[1]) * 4
+                    pi_estimations.append(pie)
 
                     print("results: ",j)
             
@@ -294,7 +298,7 @@ def output(service,R,D,Q,S):
             pi_val_to_match = truncate(math.pi, int(D)-1)
             print("pi_val_to_match: ",pi_val_to_match)
 
-            if float(pi_val_to_match)+1 == float(truncated_pi_estimate):#remove + 1
+            if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
                 print("Matches!!!!")
                 break
 
@@ -312,7 +316,7 @@ def output(service,R,D,Q,S):
         print("EC2")
 
     # print("OUTPUT: ",results)
-    return render_template("output.html",res=results,incircle=incircle,shot=shot,pi_estimate=pi_estimate)
+    return render_template("output.html",pi_estimations=pi_estimations,res=results,incircle=incircle,shot=S,pi_estimate=pi_estimate)
 
 
 # https://11zwbpoixg.execute-api.us-east-1.amazonaws.com/default/pi_estimator -> request url

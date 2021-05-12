@@ -22,21 +22,14 @@
   google.charts.load("current", { packages: ["corechart"] });
   google.charts.setOnLoadCallback(drawChart);
 
-  var data = {{ res|tojson }}
+  var data = {{ pi_estimations|tojson }}
   var vals = []
   console.log("What we want: ",data)
-  for (i = 0; i < data.length; i++) {
-    // console.log("--" , data[i]["estimated_values"])
-    // console.log("--" , JSON.parse(data[i]["estimated_values"]))
-    // console.log(typeof data[i]["estimated_values"])
-  }
 
-  pi_estimations = data[0]["estimated_values"]
-  console.log(pi_estimations)
   plot = [["run", "pi estimate", "pi"],]
 
-  for (i = 0; i < pi_estimations.length; i++) {
-    plot.push([i,pi_estimations[i],3.14159265359])
+  for (i = 0; i < data.length; i++) {
+    plot.push([i,data[i],3.14159265359])
     
   }
 
@@ -77,14 +70,8 @@
     </div>
 
 
-<!-- <h1>jQuery Example</h1>
-<p><input type=text size=5 name=a> +
-   <input type=text size=5 name=b> =
-   <span id=result>?</span>
-<p><a href=# id=calculate>calculate server side</a> -->
 
-
-  <button id="btn" class="btn"> stop </button>
+  <!-- <button id="btn" class="btn"> stop </button> -->
   
 
 
