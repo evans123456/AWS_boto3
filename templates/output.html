@@ -1,10 +1,5 @@
 {% extends "base.html" %} {% block head %}
 
-
-<script type=text/javascript>
-  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-</script>
-
 <script
   type="text/javascript"
   src="https://www.gstatic.com/charts/loader.js"
@@ -24,7 +19,7 @@
 
   var data = {{ pi_estimations|tojson }}
   var vals = []
-  console.log("What we want: ",data)
+  console.log("pi values: ",data)
 
   plot = [["run", "pi estimate", "pi"],]
 
@@ -32,10 +27,6 @@
     plot.push([i,data[i],3.14159265359])
     
   }
-
-  console.log(plot)
-
-
 
   function drawChart() {
     var data = google.visualization.arrayToDataTable(plot);
@@ -57,28 +48,44 @@
 {% endblock %} {% block header %}Resources{% endblock %} {% block content %}
 <div class="container">
   <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-12">
       <div
         id="curve_chart"
-        style="width: auto; height: auto: overflow: scroll;"
+        style="width: 100%; height: 70%;"
       ></div>
       <p>
-        Estimated value of π is<mark>{{ pi_estimate }} </mark>  (Actual: <mark>3.14159265359</mark> ) Shots taken are
-        <mark>({{ incircle }}/{{shot}})</mark>  Runtime of ..... Estimated cost is .....
+        Estimated value of π is<h1>{{ pi_estimate }} </h1>  (Actual: <mark>3.14159265359</mark> || 
+         Estimated time is <h1>{{ total_time }}</h1>
       </p>
       <br />
     </div>
+  </div>
 
 
 
-  <!-- <button id="btn" class="btn"> stop </button> -->
-  
+<div class="row">
+    <div class="col-md-12">
+      <button type="submit" id="reset" class="reset btn btn-warning ml-1 my-1 float-left">Reset</button>
+      
+      <form action="/shutdownR" method="post">
+      {% if isScalable == 1  %}
+
+      
+
+        
+      <button type="submit" id="reset" class="reset btn btn-danger ml-1 my-1 float-right">Shutdown Scalable Service</button>
+      
+
+      {% else %}
+      
+      <button type="submit" id="reset" class="reset btn btn-danger ml-1 my-1 float-right" disabled>Shutdown Scalable Service</button>
+      </div>
 
 
+      {% endif %}
+      </form>
+      </div>
 
-
-    <div class="col-md-6">
-      <button type="submit" id="reset" class="reset btn btn-warning ml-1 my-1">Reset</button>
       <div>
         <table class="table">
           <thead>
@@ -91,108 +98,36 @@
           </thead>
 
           <tbody id="tablebody" >
-            <!-- {% for i in res %}
+            {% for i in res %}
             <tr>
               <th scope="row">{{ loop.index }}</th>
-              <td>{{i["thread_id"]}}</td>
-              <td>{{i["incircle"]}}</td>
-              <td>{{i["shots"]}}</td>
+              <td>{{i[0]}}</td>
+              <td>{{i[1]}}</td>
+              <td>{{i[2]}}</td>
             </tr>
 
-            {% endfor %} -->
+            {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+
   </div>
 </div>
 
 <script
 src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- <script type="text/javascript">
-    $('button#btn').click(function(){
-      $.ajax({
-          url: "/_get_data/",
-          type: "POST",
-          success: function(resp){
-              $('div#response').append(resp.data);
-          }
-      });
-    });
-</script> -->
-
-
 <script>
-  function setIntervalX(callback, delay, repetitions) {
-    var x = 0;
-    var intervalID = window.setInterval(function () {
-
-       callback();
-
-       if (++x === repetitions) {
-           window.clearInterval(intervalID);
-       }
-    }, delay);
-}
-
   $(document).ready(function() {
-      // alert("document ready occurred!");
-      var x = 0
-
-    // $('button#reset').click(function(){
-      
-    //             $('tbody#tablebody').append("<tr></tr>");
-    //       })
     
           $(document).ready(function(){
             $("button#reset").click(function(){
               $("tbody#tablebody").empty();
             });
           });
-
-  setIntervalX(function () {
-    var index = 1
-          $.ajax({
-            url: "/_get_data",
-            type: "POST",
-            dataType: "json",
-            success: function (data) {
-              // console.log("The other data: ",data["data"])
-              data["data"].forEach(function(item2,idx) {
-                JSON.parse(item2["values"]).forEach(function(item) {
-                console.log("item: ",item)
-                $('tbody#tablebody').append("<tr><th scope='row'>"+ index+"</th><td>"+ idx +"</td><td>"+ item[0] +"</td><td> "+ item[1] +"</td></tr>");
-                  index += 1
-              });
-              });
-            },
-        });
-          }, 1000, 1);
-
-  $('button#btn').click(function(){
-  window.clearInterval(intervalId);
-    });
 });
 
-
-
-
-  // $(function(){
-  //       console.log($.ajax);
-  //       window.setInterval(function () {
-  //         $.ajax({
-  //           url: "/_get_data",
-  //           type: "POST",
-  //           dataType: "json",
-  //           success: function (data) {
-  //             $('div#response').append(data);
-  //           },
-  //       });
-  // }, 1000);
-
-  
-    // });
 
 </script>
 

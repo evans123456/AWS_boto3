@@ -13,21 +13,21 @@
     <link
       rel="stylesheet"
       href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-      crossorigin="anonymous"
+
     />
     <style>
       .form_stuff{
         /* margin: auto; */
         width: 70vw;
+        min-height: 60%;
         height:auto;
         z-index: -50;
-        border: 3px solid green;
+        border: 3px solid rgb(102, 104, 102);
         /* padding: 10px; */
         text-align: center;
         /* margin: 0; */
         position: absolute;
-        /* top: 50%; */
+        top: 20%;
         /* -ms-transform: translateY(-50%); */
         /* transform: translateY(-50%); */
         left: 15%;
@@ -39,10 +39,31 @@
     {% block head %}{% endblock %}
     
 
-    <title>Hello, world!</title>
+    <title>Evans Gichuki</title>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-primary">
+    <!-- <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">WebSiteName</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="#">Home</a></li>
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Page 1
+            <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="#">Page 1-1</a></li>
+              <li><a href="#">Page 1-2</a></li>
+              <li><a href="#">Page 1-3</a></li>
+            </ul>
+          </li>
+          <li><a href="#">Page 2</a></li>
+          <li><a href="#">Page 3</a></li>
+        </ul>
+      </div>
+    </nav> -->
+    <!-- <nav class="navbar navbar-expand-lg navbar-light bg-primary">
       <a class="navbar-brand" href="{{ url_for('home') }}">COMM034</a>
       <button
         class="navbar-toggler"
@@ -64,20 +85,35 @@
 
       <div class="nav justify-content-end">
         <ul class="nav navbar-nav navbar-right">
-          <!-- <button type="submit" onclick="reset()" class="reset btn btn-warning ml-1 my-1">Reset</button> -->
+           <button type="submit" onclick="reset()" class="reset btn btn-warning ml-1 my-1">Reset</button> 
           <button type="submit" class="btn btn-danger ml-1 my-1">Shutdown</button>
           
         </ul>
       </div>
-    </nav>
+    </nav> -->
     <div class="form_stuff">
       {% block content %}{% endblock %}
     </div>
-    
-    <!-- <nav class="navbar navbar-light bg-primary "> 
-      fixed-bottom
-      <span class="navbar-text">Evans Wahome Gichuki <strong>6677196</strong></span>
-    </nav> -->
+
+
+    <footer class="page-footer font-small blue">
+      <a href="{{ url_for('home') }}" ><button onclick="" class="btn btn-success float-left" 
+        type="submit">
+      Home 
+</button></a>
+<a href="{{ url_for('history') }}" ><button onclick="" class="btn btn-warning float-right" 
+  type="submit">
+History 
+</button></a>
+      
+
+      
+
+      <div class="footer-copyright text-center py-3">Evans Wahome Gichuki
+        <a > <strong>6677196</strong></a>
+      </div>
+      
+    </footer>
 
     
 
