@@ -4,7 +4,8 @@
 from flask import Flask, redirect,url_for, render_template, request, jsonify
 import queue
 import boto3
-import http.client 
+import http.client
+import time 
 import json
 import math
 from random import random
@@ -14,43 +15,97 @@ from flask_socketio import SocketIO
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-
-    
+from functools import partial
+import paramiko
+from paramiko import SSHClient
+from boto.manage.cmdshell import sshclient_from_instance
 
 
 app = Flask(__name__)
-
 cred = credentials.Certificate("serviceAcc.json")
 firebase_admin.initialize_app(cred)
-
 db = firestore.client()
-
 queue = queue.Queue() 
 
 
-def describe_ec2_instance():
+#--------------------------------------------------------------------------------------------------------------
+
+user_data = '''#!/bin/bash
+sudo apt-get update &&
+sudo apt-get install python3 &&
+cd /home/ubuntu/ &&
+git clone https://github.com/evans123456/ec2 &&
+cd ec2'''
+
+
+def create_ec2_instance():
     try:
-        print ("Describing EC2 instance")
-        resource_ec2 = boto3.client("ec2")
-        # print(resource_ec2.describe_instances())
-        print(resource_ec2.describe_instances()["Reservations"][0]["Instances"][0]["InstanceId"])
-        return str(resource_ec2.describe_instances()["Reservations"][0]["Instances"][0]["InstanceId"])
+        print ("Creating EC2 instance")
+        resource_ec2 = boto3.client("ec2",region_name='us-east-1',aws_access_key_id="AKIASO6YY2CWKF2GGD26",
+            aws_secret_access_key="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",)
+        resource_ec2.run_instances(
+            ImageId="ami-09e67e426f25ce0d7",#ami-0d5eff06f840b45e9
+            MinCount=1,
+            MaxCount=1,
+            InstanceType="t2.micro",
+            UserData=user_data, 
+            KeyName="mypem",
+            
+        )
+        print("end of request")
     except Exception as e:
         print(e)
 
-def truncate(f, digits):
-    return ("{:.30f}".format(f))[:-30+digits]
+
+def describe_ec2_instance():
+    instance_ids = []
+    try:
+        print ("Describing EC2 instance")
+        resource_ec2 = boto3.client("ec2")
+        for i in resource_ec2.describe_instances()["Reservations"]:
+
+            print(i["Instances"][0]["InstanceId"])
+            instance_ids.append(i["Instances"][0]["InstanceId"])
+        
+        print("DONE")
+
+        # print(resource_ec2.describe_instances()["Reservations"][0]["Instances"][0]["InstanceId"])
+        return instance_ids
+    except Exception as e:
+        print(e)
 
 def get_public_ip(instance_id):
     ec2_client = boto3.client("ec2", region_name="us-east-1")
     reservations = ec2_client.describe_instances(InstanceIds=[instance_id]).get("Reservations")
 
-
     for reservation in reservations:
         for instance in reservation['Instances']:
             print(instance.get("PublicIpAddress"))
+            if instance.get("PublicIpAddress") == None:
+                continue
+            else:    
+                return instance.get("PublicIpAddress")
+
+def get_values_from_ec2(host,eR,Q):
     
-    return instance.get("PublicIpAddress")
+    # host="100.26.143.241"
+    user="ubuntu"
+    key=paramiko.RSAKey.from_private_key_file("./mypem.pem")
+    client = SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    # client.load_system_host_keys()
+    client.connect(host, username=user,pkey=key)
+    stdin, stdout, stderr = client.exec_command(f'cd /home/ubuntu/ && cd ec2/ && python3 pi_estimator.py {int(eR)} {int(Q)}')
+    print ("stderr: ", stderr.readlines())
+
+    vals = stdout.readlines()[4]
+    print ("output: ", vals)
+
+    return vals
+
+#---------------------------------------------------------------------------------------------------------------
+def truncate(f, digits):
+    return ("{:.30f}".format(f))[:-30+digits]
 
 def calculate_cost(time_taken):
     # us-east-ohio
@@ -58,67 +113,41 @@ def calculate_cost(time_taken):
     running_cost = time_taken * 0.0000097222
     return one_request + running_cost
 
-
+#------------------------------------------------------------------------------------------------------------
 
 @app.route("/",methods = ["POST","GET"])
 def home():
     if request.method == "POST":
         service = request.form["flexRadioDefault"]
+
         return redirect(url_for("resources",srv=service))
         
     else:
         return render_template("home.html")
 
-def create_ec2_instance():
-    user_data = '''#!/bin/bash
-        sudo apt-get update &&
-        sudo apt-get install python3 &&
-        sudo apt install python3-pip &&
-        Y && 
-        sudo apt-get install nginx &&
-        Y && 
-        git clone https://github.com/evans123456/ec2Flask.git && 
-        cd ec2Flask &&
-        pip install -r requirements.txt &&
-        gunicorn -b 0.0.0.0:8000 app:app  '''
 
-
-
-
-
-    try:
-        print ("Creating one EC2 instance")
-        resource_ec2 = boto3.client("ec2",region_name='us-east-1')
-        resource_ec2.run_instances(
-            ImageId="ami-0d5eff06f840b45e9",
-            MinCount=1,
-            MaxCount=1,
-            InstanceType="t2.micro",
-            UserData=user_data, 
-            KeyName="mypem",
-           #security_groups=['coursework_1']
-        )
-        print("end of request")
-    except Exception as e:
-        print(e)
 
 @app.route("/shutdownR",methods = ["POST"])
 def stop_ec2_instance():
-    try:
-        print ("Stopping EC2 instance")
-        instance_id = describe_ec2_instance()
-        resource_ec2 = boto3.client("ec2")
-        print(resource_ec2.stop_instances(InstanceIds=[instance_id]))
-    except Exception as e:
-        print(e)
+    instance_ids = describe_ec2_instance()
+    for i in instance_ids:
+        try:
+            print ("Stopping EC2 instance {i}")
+            # instance_id = describe_ec2_instance()
+            resource_ec2 = boto3.client("ec2")
+            resource_ec2.stop_instances(InstanceIds=[i])
+            # resource_ec2.terminate(InstanceIds=[i])
+            print(f"{i} STOPPED")
+        except Exception as e:
+            print(e)
+    return render_template("shutdown.html",instance_ids=instance_ids)
 
-@app.route("/output/<service>/<R>/<D>/<Q>/<S>/",methods = ["POST","GET"])
-def output(service,R,D,Q,S):
-    
-    
+
+@app.route("/output/<service>/<R>/<D>/<Q>/<S>/<instance_ip_address>/",methods = ["POST","GET"])
+def output(service,R,D,Q,S,instance_ip_address):
     eR = int(S)/int(R)
-    
     max_tries = 3
+    
 
     if service == "lambda":
         results = []
@@ -134,28 +163,32 @@ def output(service,R,D,Q,S):
             with ThreadPoolExecutor() as executor:        
                 runs=[value for value in range(int(R))]
         
-
+            print("RUNS: ",runs)
             for i in runs:
+                
            
-                try:     
+                try:    
+                    print("ThreadID: ",i) 
                     host = "11zwbpoixg.execute-api.us-east-1.amazonaws.com"        
-                    c = http.client.HTTPSConnection(host)        
+                    c = http.client.HTTPSConnection(host)      
                     data = {
-                        'thread_id': i,
-                            "D":D,
-                            "Q":Q,
-                            "S":eR
-                        }  
+                        "Q":Q,
+                        "S":eR
+                    }   
+                     
                     c.request("POST", "/default/pi_estimator", json.dumps(data))        
                     response = c.getresponse()        
-  
+
 
                     data = json.loads(response.read().decode('utf-8') ) 
+                    data["thread_id"] = i
                     print("From AWS: ",data)
+
                     if "errorMessage" in data:
                         pass
-                    else:
+                    else:                       
                         results.append(data)
+                        continue
 
                     
 
@@ -164,6 +197,7 @@ def output(service,R,D,Q,S):
                     print(data+" from "+str(i)) # May expose threads as completing in a different order    
                     return "page "+str(i)
 
+            print("length of results: ",len(results))
             print("results: ",results)
             for i in results:
 
@@ -209,41 +243,117 @@ def output(service,R,D,Q,S):
             
         
     elif service == "ec2":
-        pi_estimate=0
         isScalable=1
-        total_time=0
-        pi_estimations=[]
-        in_sh_vals=[]
-        incircle=[]
+        incircle_shot = []
+        total_elapsed_time = []
+        ec2_pi_estimations=[]
+        inc = 0
+        sh = 0
+        
 
-        for i in range(0,R):
-            create_ec2_instance()
-            instance_id = describe_ec2_instance()
-            print(type(instance_id))
 
-            public_ip = get_public_ip(instance_id)
-            print(type(public_ip))
+        while max_tries > 0:
 
+            print(ast.literal_eval(instance_ip_address))
+            print(instance_ip_address)
+            print(type(instance_ip_address))
+            
+
+            for i in ast.literal_eval(instance_ip_address):
+                if i is not None:
+                    print("IP ADDR: ",i)
+                    my_values = get_values_from_ec2(i,eR,Q)
+                    my_values = ast.literal_eval(my_values)
+                    print(type(my_values))
+                    print(type(my_values["values"]))
+                    
+                    total_elapsed_time.append(float(my_values["elapsed_time"]))
+                    tt = sum(total_elapsed_time)
+                    print("TOTAL TIME TAKEN: ",tt)
+
+
+                    for j in my_values["values"]:
+                        pi_est = (j[0]/j[1]) *4
+                        inc = inc + j[0]
+                        sh = sh + j[1]
+                        incircle_shot.append([i,j[0],j[1]])
+                        ec2_pi_estimations.append(pi_est)
+            
+            fin_pi_estimate = inc/sh * 4 
+
+            print("incircle_shot values: ",incircle_shot)
+            print("Total elapsed time: ",tt)
+            print("Pi estimations: ",ec2_pi_estimations)
+
+            truncated_pi_estimate = truncate(fin_pi_estimate, int(D)-1)
+
+            pi_val_to_match = truncate(math.pi, int(D)-1)
+
+
+            if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
+                db.collection("runs").add(
+                    {"cost":tt,
+                    "d":D,
+                    "pi_estimate":ec2_pi_estimations,
+                    "q":Q,
+                    "r":R,
+                    "s":S}
+                )
+                break
+            else:
+                max_tries = max_tries -1
     
-    return render_template("output.html",total_time=total_time,pi_estimations=pi_estimations,isScalable=isScalable,res=in_sh_vals,incircle=incircle,shot=S,pi_estimate=pi_estimate)
+        return render_template("output.html",total_time=tt,pi_estimations=ec2_pi_estimations,isScalable=isScalable,res=incircle_shot,incircle=inc,shot=sh,pi_estimate=fin_pi_estimate)
 
 
 
 @app.route("/<srvce>/<R>",methods = ["POST","GET"])
 def lastPage(srvce, R):
-    
+    current_state = ""
+    instance_ip_address = []
+    if srvce=="ec2":
+        
+        
+        instance_ids = describe_ec2_instance()
+        print(instance_ids)
+
+        ec2 = boto3.resource('ec2')
+        
+        
+        while current_state != 'ok':
+            for status in ec2.meta.client.describe_instance_status()['InstanceStatuses']:
+                
+                current_state = status['SystemStatus']['Status']
+                print("The status: ",current_state)
+            time.sleep(10)
+
+
+        print("EC2s are running",current_state)
+
     if request.method == "POST":
+        
+        if srvce == "ec2":
+            for instance in instance_ids:
+                
+                ip_address = get_public_ip(instance)
+                instance_ip_address.append(ip_address)
+                
+
+            # [x for x in instance_ip_address if x is not None]
+            print("The IPs: ",instance_ip_address)
+
+
         S = request.form["number_of_shots"]
         Q = request.form["reporting_rate"]
         D = request.form["matching_digits"]
         
-        return redirect(url_for("output",service=srvce,R=int(R),D=int(D),Q=int(Q),S=int(S)))
+        return redirect(url_for("output",service=srvce,R=int(R),D=int(D),Q=int(Q),S=int(S),instance_ip_address=instance_ip_address))
 
     else:
-        return render_template("lastpage.html")
+        return render_template("lastpage.html",srvce=srvce,current_state=current_state)
 
 
-
+# def loader():
 
 
 
@@ -261,9 +371,12 @@ def history():
 @app.route("/<srv>",methods = ["POST","GET"])
 def resources(srv):
     if request.method == "POST":
-
-        no_of_resources = request.form["no_of_resource"]       
+        no_of_resources = request.form["no_of_resource"]    
+        if srv == "ec2":
+            for i in range(0,int(no_of_resources)):
+                create_ec2_instance()
         
+        print("Finished creating instances")
         return redirect(url_for("lastPage",srvce=srv,R=no_of_resources))
 
         

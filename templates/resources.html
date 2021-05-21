@@ -18,7 +18,9 @@ content %}
     <option value="10">Ten</option>
   </select>
 
-  <button type="submit" class="btn btn-primary my-1">Submit</button>
+  <button onclick="$('#loading').show();" type="submit" class="btn btn-primary my-1">Submit</button>
 </form>
-
+<div id="loading" style="display: none">
+  <img src="loading.gif" alt="" />Initializing the {{content}} resources!!!
+</div>
 {% endblock %}

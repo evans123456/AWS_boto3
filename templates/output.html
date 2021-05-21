@@ -54,8 +54,8 @@
         style="width: 100%; height: 70%;"
       ></div>
       <p>
-        Estimated value of π is<h1>{{ pi_estimate }} </h1>  (Actual: <mark>3.14159265359</mark> || 
-         Estimated time is <h1>{{ total_time }}</h1>
+        Estimated value of π is<h2>{{ pi_estimate }} </h2>  (Actual: <mark>3.14159265359</mark> || 
+         Estimated time is <h3>{{ total_time }}</h3>
       </p>
       <br />
     </div>
@@ -71,14 +71,15 @@
       {% if isScalable == 1  %}
 
       
-
-        
-      <button type="submit" id="reset" class="reset btn btn-danger ml-1 my-1 float-right">Shutdown Scalable Service</button>
-      
+      <button onclick="$('#loading').show();" type="submit" id="reset" class="reset btn btn-danger ml-1 my-1 float-right">Shutdown Scalable Service</button>
+     
+      <div class="col-md-12" id="loading" style="display: none">
+        <img src="loading.gif" alt="" />Terminating EC2 Instances
+      </div>
 
       {% else %}
       
-      <button type="submit" id="reset" class="reset btn btn-danger ml-1 my-1 float-right" disabled>Shutdown Scalable Service</button>
+      <button type="submit" id="reset" class="reset btn btn-danger ml-1 my-1 float-right" disabled>(Current service not scalable)</button>
       </div>
 
 
@@ -86,7 +87,7 @@
       </form>
       </div>
 
-      <div>
+      <div class="col-md-12">
         <table class="table">
           <thead>
             <tr>

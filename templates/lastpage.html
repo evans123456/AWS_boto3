@@ -44,6 +44,20 @@ content %}
     </div>
   </div>
 
-  <button type="submit" class="btn btn-primary my-1">Submit</button>
+  {% if srvce == "ec2" %}
+  <p>Status Check: {{current_state}}</p>
+  {% endif %}
+
+  <button
+    onclick="$('#loading').show();"
+    type="submit"
+    class="btn btn-primary my-1"
+  >
+    Submit
+  </button>
 </form>
+<div id="loading" style="display: none">
+  <img src="loading.gif" alt="" />Fetching Instance IDs and their IP
+  addresses!!!
+</div>
 {% endblock %}
