@@ -61,7 +61,7 @@ def describe_ec2_instance():
     instance_ids = []
     try:
         print ("Describing EC2 instance")
-        resource_ec2 = boto3.client("ec2")
+        resource_ec2 = boto3.client("ec2",region_name="us-east-1")
         for i in resource_ec2.describe_instances()["Reservations"]:
 
             print(i["Instances"][0]["InstanceId"])
@@ -134,7 +134,7 @@ def stop_ec2_instance():
         try:
             print ("Stopping EC2 instance {i}")
             # instance_id = describe_ec2_instance()
-            resource_ec2 = boto3.client("ec2")
+            resource_ec2 = boto3.client("ec2",region_name="us-east-1")
             resource_ec2.stop_instances(InstanceIds=[i])
             # resource_ec2.terminate(InstanceIds=[i])
             print(f"{i} STOPPED")
@@ -317,7 +317,7 @@ def lastPage(srvce, R):
         instance_ids = describe_ec2_instance()
         print(instance_ids)
 
-        ec2 = boto3.resource('ec2')
+        ec2 = boto3.resource('ec2',region_name="us-east-1")
         
         
         while current_state != 'ok':
