@@ -36,7 +36,7 @@ cd /home/ubuntu/ &&
 git clone https://github.com/evans123456/ec2 &&
 cd ec2'''
 
-aws_access_key_id="AKIASO6YY2CWKF2GGD26",
+aws_access_key_id="AKIASO6YY2CWKF2GGD26"
 aws_secret_access_key="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"
 
 
