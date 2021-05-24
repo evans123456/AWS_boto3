@@ -21,16 +21,11 @@ from boto.manage.cmdshell import sshclient_from_instance
 
 
 app = Flask(__name__)
-aws_access_key_id="AKIASO6YY2CWKF2GGD26",
-aws_secret_access_key="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"
-
 cred = credentials.Certificate("serviceAcc.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 queue = queue.Queue() 
 
-resource_ec2 = boto3.client("ec2",region_name='us-east-1',aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,)
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -41,14 +36,16 @@ cd /home/ubuntu/ &&
 git clone https://github.com/evans123456/ec2 &&
 cd ec2'''
 
-
+aws_access_key_id="AKIASO6YY2CWKF2GGD26",
+aws_secret_access_key="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"
 
 
 def create_ec2_instance():
-    global aws_access_key_id,aws_secret_access_key,resource_ec2
+    global aws_access_key_id,aws_secret_access_key
     try:
         print ("Creating EC2 instance")
-        
+        resource_ec2 = boto3.client("ec2",region_name='us-east-1',aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,)
         resource_ec2.run_instances(
             ImageId="ami-09e67e426f25ce0d7", #ubuntu
             MinCount=1,
@@ -64,11 +61,12 @@ def create_ec2_instance():
 
 
 def describe_ec2_instance():
-    global aws_access_key_id,aws_secret_access_key,resource_ec2
+    global aws_access_key_id,aws_secret_access_key
     instance_ids = []
     try:
         print ("Describing EC2 instance")
-        
+        resource_ec2 = boto3.client("ec2",region_name="us-east-1",aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key)
         for i in resource_ec2.describe_instances()["Reservations"]:
 
             print(i["Instances"][0]["InstanceId"])
@@ -83,8 +81,9 @@ def describe_ec2_instance():
 
 def get_public_ip(instance_id):
     global aws_access_key_id,aws_secret_access_key
-   
-    reservations = resource_ec2.describe_instances(InstanceIds=[instance_id]).get("Reservations")
+    ec2_client = boto3.client("ec2", region_name="us-east-1",aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key)
+    reservations = ec2_client.describe_instances(InstanceIds=[instance_id]).get("Reservations")
 
     for reservation in reservations:
         for instance in reservation['Instances']:
@@ -137,14 +136,14 @@ def home():
 
 @app.route("/shutdownR",methods = ["POST"])
 def stop_ec2_instance():
-    global aws_access_key_id,aws_secret_access_key,resource_ec2
+    global aws_access_key_id,aws_secret_access_key
     instance_ids = describe_ec2_instance()
     for i in instance_ids:
         try:
             print ("Stopping EC2 instance {i}")
             # instance_id = describe_ec2_instance()
-            # resource_ec2 = boto3.client("ec2",region_name="us-east-1",aws_access_key_id=aws_access_key_id,
-            # aws_secret_access_key=aws_secret_access_key)
+            resource_ec2 = boto3.client("ec2",region_name="us-east-1",aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key)
             resource_ec2.stop_instances(InstanceIds=[i])
             # resource_ec2.terminate(InstanceIds=[i])
             print(f"{i} STOPPED")
