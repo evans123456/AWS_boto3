@@ -329,7 +329,7 @@ def lastPage(srvce, R):
         instance_ids = describe_ec2_instance()
         print(instance_ids)
 
-        ec2 = boto3.resource('ec2',region_name="us-east-1",aws_access_key_id=aws_access_key_id )
+        ec2 = boto3.resource('ec2',region_name="us-east-1",aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
         
         
         while current_state != 'ok':
