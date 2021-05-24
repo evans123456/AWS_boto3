@@ -8,6 +8,19 @@ user_data = '''#!/bin/bash
 git clone <> && cd <directory> &&   '''
 
 
+def stop_ec2_instance():
+    instance_ids = describe_ec2_instance()
+    for i in instance_ids:
+        try:
+            print ("Stopping EC2 instance {i}")
+            # instance_id = describe_ec2_instance()
+            resource_ec2 = boto3.client("ec2",region_name="us-east-1")
+            resource_ec2.stop_instances(InstanceIds=[i])
+            # resource_ec2.terminate(InstanceIds=[i])
+            print(f"{i} STOPPED")
+        except Exception as e:
+            print(e)
+
 def create_ec2_instance():
     try:
         print ("Creating EC2 instance")

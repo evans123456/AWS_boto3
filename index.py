@@ -1,5 +1,5 @@
 # curl -d '{"thread_id": 1,"D": 5,"Q": 10000,"S": 200000}' https://11zwbpoixg.execute-api.us-east-1.amazonaws.com/default/my_incircle_and_shot_values 
-
+# view logs gcloud app logs tail -s default
 
 from flask import Flask, redirect,url_for, render_template, request, jsonify
 import queue
@@ -11,7 +11,6 @@ import math
 from random import random
 from concurrent.futures import ThreadPoolExecutor
 import ast
-from flask_socketio import SocketIO
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -22,11 +21,16 @@ from boto.manage.cmdshell import sshclient_from_instance
 
 
 app = Flask(__name__)
+aws_access_key_id="AKIASO6YY2CWKF2GGD26",
+aws_secret_access_key="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"
+
 cred = credentials.Certificate("serviceAcc.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 queue = queue.Queue() 
 
+resource_ec2 = boto3.client("ec2",region_name='us-east-1',aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,)
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -38,13 +42,15 @@ git clone https://github.com/evans123456/ec2 &&
 cd ec2'''
 
 
+
+
 def create_ec2_instance():
+    global aws_access_key_id,aws_secret_access_key,resource_ec2
     try:
         print ("Creating EC2 instance")
-        resource_ec2 = boto3.client("ec2",region_name='us-east-1',aws_access_key_id="AKIASO6YY2CWKF2GGD26",
-            aws_secret_access_key="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",)
+        
         resource_ec2.run_instances(
-            ImageId="ami-09e67e426f25ce0d7",#ami-0d5eff06f840b45e9
+            ImageId="ami-09e67e426f25ce0d7", #ubuntu
             MinCount=1,
             MaxCount=1,
             InstanceType="t2.micro",
@@ -58,10 +64,11 @@ def create_ec2_instance():
 
 
 def describe_ec2_instance():
+    global aws_access_key_id,aws_secret_access_key,resource_ec2
     instance_ids = []
     try:
         print ("Describing EC2 instance")
-        resource_ec2 = boto3.client("ec2",region_name="us-east-1")
+        
         for i in resource_ec2.describe_instances()["Reservations"]:
 
             print(i["Instances"][0]["InstanceId"])
@@ -75,8 +82,9 @@ def describe_ec2_instance():
         print(e)
 
 def get_public_ip(instance_id):
-    ec2_client = boto3.client("ec2", region_name="us-east-1")
-    reservations = ec2_client.describe_instances(InstanceIds=[instance_id]).get("Reservations")
+    global aws_access_key_id,aws_secret_access_key
+   
+    reservations = resource_ec2.describe_instances(InstanceIds=[instance_id]).get("Reservations")
 
     for reservation in reservations:
         for instance in reservation['Instances']:
@@ -129,12 +137,14 @@ def home():
 
 @app.route("/shutdownR",methods = ["POST"])
 def stop_ec2_instance():
+    global aws_access_key_id,aws_secret_access_key,resource_ec2
     instance_ids = describe_ec2_instance()
     for i in instance_ids:
         try:
             print ("Stopping EC2 instance {i}")
             # instance_id = describe_ec2_instance()
-            resource_ec2 = boto3.client("ec2",region_name="us-east-1")
+            # resource_ec2 = boto3.client("ec2",region_name="us-east-1",aws_access_key_id=aws_access_key_id,
+            # aws_secret_access_key=aws_secret_access_key)
             resource_ec2.stop_instances(InstanceIds=[i])
             # resource_ec2.terminate(InstanceIds=[i])
             print(f"{i} STOPPED")
@@ -235,7 +245,10 @@ def output(service,R,D,Q,S,instance_ip_address):
             else:
                 max_tries = max_tries -1
 
-        print("OUTPUT: ",pi_estimations)
+        print("pie values: ",pi_estimations)
+        print("total_time: ",total_time)
+        print("pi_estimate: ",pi_estimate)
+
         return render_template("output.html",total_time=total_time,pi_estimations=pi_estimations,isScalable=isScalable,res=in_sh_vals,incircle=incircle,shot=S,pi_estimate=pi_estimate)
 
 
