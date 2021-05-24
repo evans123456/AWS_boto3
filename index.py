@@ -321,6 +321,8 @@ def output(service,R,D,Q,S,instance_ip_address):
 
 @app.route("/<srvce>/<R>",methods = ["POST","GET"])
 def lastPage(srvce, R):
+    global aws_access_key_id,aws_secret_access_key
+    print("ins: last page: ",aws_access_key_id,aws_secret_access_key)
     current_state = ""
     instance_ip_address = []
     if srvce=="ec2":
