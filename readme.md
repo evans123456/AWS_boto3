@@ -1,6 +1,6 @@
 High level diagram
 
-![alt text](./highleveldiagram.png)
+![alt text](./higher.png)
 
 Data Flow
 
