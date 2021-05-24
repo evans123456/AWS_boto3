@@ -114,11 +114,24 @@ def get_values_from_ec2(host,eR,Q):
 def truncate(f, digits):
     return ("{:.30f}".format(f))[:-30+digits]
 
-def calculate_cost(time_taken):
+def calculate_lambda_cost(memory,timetaken,r):
     # us-east-ohio
-    one_request = 0.20/1000000
-    running_cost = time_taken * 0.0000097222
-    return one_request + running_cost
+    print(memory,timetaken,r)
+    total_compute_seconds = float(r) * timetaken
+    print(total_compute_seconds)
+    total_compute_gbs = total_compute_seconds * (memory/1024)
+    print(total_compute_gbs)
+    total_compute_gbs = total_compute_gbs - 400000
+    print(total_compute_gbs)
+    monthly_charge = total_compute_gbs * 0.0000000021
+    print("Monthly Charge: ",monthly_charge)
+    return abs(monthly_charge)
+
+def calculate_ec2_cost(instances,timetaken):
+    hours = float(timetaken)/60
+    return float(instances) * 0.0116 * float(hours)
+
+
 
 #------------------------------------------------------------------------------------------------------------
 
@@ -227,16 +240,23 @@ def output(service,R,D,Q,S,instance_ip_address):
 
             pi_val_to_match = truncate(math.pi, int(D)-1)
 
+            print("The times that were taken: ",times)
             total_time = sum(times)
+            print("total_time: ",total_time)
+            cost = calculate_lambda_cost(128,total_time,R)
+            print(f"Cost: {cost} $")
+            cost = "{} $".format(cost)
 
             if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
-                db.collection("runs").add(
-                    {"cost":total_time,
+
+                db.collection("history").add(
+                    {"time":total_time,
                     "d":D,
-                    "pi_estimate":pi_estimate,
+                    "pi_estimate":truncated_pi_estimate,
                     "q":Q,
                     "r":R,
-                    "s":S}
+                    "s":S,
+                    "cost":cost}
                 )
                 break
 
@@ -301,15 +321,17 @@ def output(service,R,D,Q,S,instance_ip_address):
 
             pi_val_to_match = truncate(math.pi, int(D)-1)
 
-
+            ec2_cost = calculate_ec2_cost(R,tt)
+            ec2_cost = "{} $".format(ec2_cost)
             if float(pi_val_to_match) == float(truncated_pi_estimate):#remove + 1
-                db.collection("runs").add(
-                    {"cost":tt,
+                db.collection("history").add(
+                    {"time":tt,
                     "d":D,
-                    "pi_estimate":ec2_pi_estimations,
+                    "pi_estimate":truncated_pi_estimate,
                     "q":Q,
                     "r":R,
-                    "s":S}
+                    "s":S,
+                    "cost":ec2_cost}
                 )
                 break
             else:
@@ -355,6 +377,8 @@ def lastPage(srvce, R):
 
             # [x for x in instance_ip_address if x is not None]
             print("The IPs: ",instance_ip_address)
+        else:#if its lambda
+            instance_ip_address=['1','2'] #fake values
 
 
         S = request.form["number_of_shots"]
@@ -375,10 +399,11 @@ def lastPage(srvce, R):
 @app.route("/history",methods = ["GET"])
 def history():
     items = []
-    docs = db.collection("runs").get()
+    docs = db.collection("history").get()
     for doc in docs:
         items.append(doc.to_dict())
 
+    items = reversed(items)
     return render_template("history.html",vals=items)
 
 
